@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id),LS=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},SV=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
-const MODEL='gemini-2.5-flash-lite',MALE=/felipe|eddy|reed|rocko|grandpa|daniel|oliver|arthur|aaron|fred|alex|ralph/i;
+const 'gemini-3.5-flash-lite',MALE=/felipe|eddy|reed|rocko|grandpa|daniel|oliver|arthur|aaron|fred|alex|ralph/i;
 const S={name:LS('jarvis_name'),key:LS('jarvis_key'),voice:LS('jv_voice'),rate:+LS('jv_rate')||.92,pitch:+LS('jv_pitch')||.8,wake:LS('jv_wake')==='1'};
 let voices=[],hist=[],busy=0,listening=0,speaking=0,on=0,rec=null,stream=null,facing='environment',last='',au=null,wl=null;
 const setS=(s,t)=>{document.body.dataset.s=s;$('st').textContent=t||({idle:'PRONTO',listening:'ESCUTANDO',thinking:'PENSANDO',speaking:'FALANDO',error:'ERRO'})[s]};
