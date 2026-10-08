@@ -416,7 +416,7 @@ busy=false;
 exec(p);
 }
 
-/* GEMINI */
+/* GEMINI - INTERACTIONS API */
 
 async function plan(){
 
@@ -441,7 +441,7 @@ Data e hora atual: ${now}.
 Contatos disponíveis:
 ${contacts||'(nenhum)'}
 
-Responda SOMENTE com JSON válido neste formato:
+Responda SOMENTE como JSON válido neste formato:
 
 {"action":"nome ou null","args":{},"say":"resposta curta"}
 
@@ -502,38 +502,58 @@ Regras:
 - Se algo não for possível pelo iOS, explique honestamente.
 - Retorne somente JSON.`;
 
-const contents=[];
+const inputParts=[];
 
 for(const h of hist.slice(-10)){
-contents.push({
-role:h.role==='assistant'?'model':'user',
-parts:[{text:h.content}]
+inputParts.push({
+type:'text',
+text:(h.role==='assistant'?'JARVIS: ':'Usuário: ')+h.content
 });
 }
 
 try{
 
-const url=
-'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key='+
-encodeURIComponent(key);
-
-const r=await fetch(url,{
+const r=await fetch(
+'https://generativelanguage.googleapis.com/v1beta/interactions',
+{
 method:'POST',
 headers:{
-'Content-Type':'application/json'
+'Content-Type':'application/json',
+'x-goog-api-key':key
 },
 body:JSON.stringify({
 
-systemInstruction:{
-parts:[{text:sys}]
+model:'gemini-3.5-flash-lite',
+
+input:inputParts,
+
+system_instruction:sys,
+
+generation_config:{
+thinking_level:'minimal'
 },
 
-contents:contents,
-
-generationConfig:{
-temperature:.4,
-maxOutputTokens:500,
-responseMimeType:'application/json'
+response_format:{
+type:'text',
+mime_type:'application/json',
+schema:{
+type:'object',
+properties:{
+action:{
+type:'string'
+},
+args:{
+type:'object',
+additionalProperties:{
+type:'string'
+}
+},
+say:{
+type:'string'
+}
+},
+required:['action','args','say']
+}
 }
 
 })
@@ -548,10 +568,31 @@ say:'Erro da API Gemini: '+(j?.error?.message||'chave inválida ou requisição 
 };
 }
 
-const t=j?.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('').trim()||'';
+const t=j?.output_text?.trim()||'';
 
-if(!t)
-return{say:'A Gemini não retornou uma resposta.'};
+if(!t){
+
+const steps=j?.steps||[];
+
+const texts=[];
+
+for(const step of steps){
+
+if(step?.content?.type==='text'&&step.content.text)
+texts.push(step.content.text);
+
+if(step?.text)
+texts.push(step.text);
+
+}
+
+if(texts.length)
+return JSON.parse(texts.join('').trim());
+
+return{
+say:'A Gemini não retornou uma resposta.'
+};
+}
 
 try{
 
@@ -561,7 +602,10 @@ t.replace(/```json/gi,'').replace(/```/g,'').trim()
 
 }catch(e){
 
-return{say:t};
+return{
+say:t
+};
+
 }
 
 }catch(e){
