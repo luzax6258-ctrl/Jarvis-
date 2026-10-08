@@ -24,12 +24,14 @@ header{text-align:center;padding:10px 16px 0;position:relative}
 .orb i:nth-child(2){inset:16px;opacity:.6;animation:spin 9s linear infinite reverse}
 .orb i:nth-child(3){inset:44px;border:0;background:radial-gradient(circle,#fff,var(--c) 45%,transparent 72%);animation:pulse 3s ease-in-out infinite}
 body[data-s=thinking] .orb i:nth-child(1){animation-duration:1.5s}
-body[data-s=listening] .orb i:nth-child(3),body[data-s=speaking] .orb i:nth-child(3){animation-duration:.6s}
+body[data-s=listening] .orb i:nth-child(3),
+body[data-s=speaking] .orb i:nth-child(3){animation-duration:.6s}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{50%{transform:scale(1.25);opacity:.8}}
 .wave{display:flex;gap:4px;height:34px;align-items:center;margin-top:12px}
 .wave b{width:4px;height:5px;background:var(--c);border-radius:2px}
-body[data-s=listening] .wave b,body[data-s=speaking] .wave b{animation:bar .7s ease-in-out infinite}
+body[data-s=listening] .wave b,
+body[data-s=speaking] .wave b{animation:bar .7s ease-in-out infinite}
 .wave b:nth-child(2n){animation-delay:.2s}
 .wave b:nth-child(3n){animation-delay:.4s}
 @keyframes bar{50%{height:30px}}
@@ -61,7 +63,9 @@ summary{color:var(--c)}
 
 <div class="ov on" id="intro">
 <h1>J.A.R.V.I.S.</h1>
-<p style="text-align:center">Toque para ligar. Se o iPhone pedir, permita o microfone e a localização.</p>
+<p style="text-align:center">
+Toque para ligar. Se o iPhone pedir, permita o microfone e a localização.
+</p>
 <div style="text-align:center;margin-top:24px">
 <button class="pill" id="go">INICIAR</button>
 </div>
@@ -73,13 +77,20 @@ summary{color:var(--c)}
 <label>Chave da API Gemini</label>
 <input id="key" type="password" placeholder="Cole sua chave Gemini aqui" autocomplete="off">
 
-<label>Seus contatos (um por linha: nome=número com DDD, ex.: joão=5511999998888)</label>
+<label>
+Seus contatos (um por linha: nome=número com DDD,
+ex.: joão=5511999998888)
+</label>
+
 <textarea id="ctc" rows="4" autocapitalize="none"></textarea>
 
 <label>Voz</label>
 <select id="voice"></select>
 
-<p>Voz melhor: Ajustes do iPhone › Acessibilidade › Conteúdo Falado › Vozes › Português (Brasil) › baixe a versão Aprimorada.</p>
+<p>
+Voz melhor: Ajustes do iPhone › Acessibilidade › Conteúdo Falado ›
+Vozes › Português (Brasil) › baixe a versão Aprimorada.
+</p>
 
 <div style="text-align:center;margin:18px 0">
 <button class="pill" id="save">SALVAR</button>
@@ -87,7 +98,9 @@ summary{color:var(--c)}
 
 <details>
 <summary>Atalhos que preciso que você crie</summary>
+
 <p>Crie estes atalhos no app Atalhos do iPhone:</p>
+
 <ul>
 <li>JARVIS Lanterna Ligar</li>
 <li>JARVIS Lanterna Desligar</li>
@@ -99,75 +112,107 @@ summary{color:var(--c)}
 <li>JARVIS Lembrete</li>
 <li>JARVIS Nota</li>
 </ul>
+
 </details>
 
 <details>
 <summary>Limites do iOS</summary>
+
 <ul>
 <li>O JARVIS precisa estar aberto para a escuta contínua funcionar.</li>
 <li>Mensagens e ligações abrem o aplicativo correspondente para você confirmar.</li>
 <li>O Face ID funciona como trava de acesso para informações privadas.</li>
 </ul>
+
 </details>
 
 <div style="text-align:center;margin-top:18px">
 <button class="pill o" id="close">VOLTAR</button>
 </div>
+
 </div>
 
 <header>
+
 <button id="gear">⚙</button>
+
 <div id="clock">--:--</div>
 <div id="date"></div>
 <div id="info">SISTEMAS ONLINE</div>
+
 </header>
 
 <div class="core">
-<div class="orb"><i></i><i></i><i></i></div>
+
+<div class="orb">
+<i></i>
+<i></i>
+<i></i>
+</div>
+
 <div class="wave" id="wave"></div>
+
 <div id="st">AGUARDANDO</div>
+
 <div id="cap"></div>
+
 <a id="lnk" hidden></a>
 
 <div id="conf">
+
 <button class="pill" id="yes">CONFIRMAR</button>
 <button class="pill o" id="no">CANCELAR</button>
+
 </div>
 
 <button class="tg" id="cont" style="background:none;border:0">
 Escuta contínua ("Jarvis, ..."): desligada
 </button>
+
 </div>
 
 <div class="bar">
+
 <button class="rd" id="mic">🎙</button>
-<input id="txt" placeholder="Fale ou digite…" enterkeyhint="send" autocomplete="off">
+
+<input
+id="txt"
+placeholder="Fale ou digite…"
+enterkeyhint="send"
+autocomplete="off">
+
 <button class="rd" id="snd">➤</button>
+
 </div>
 
 <script>
+
 const $=s=>document.querySelector(s);
 
 const LS=k=>{
-try{return localStorage.getItem(k)||''}
-catch(e){return''}
+try{
+return localStorage.getItem(k)||'';
+}catch(e){
+return '';
+}
 };
 
 const SV=(k,v)=>{
-try{localStorage.setItem(k,v)}
-catch(e){}
+try{
+localStorage.setItem(k,v);
+}catch(e){}
 };
 
-let key=LS('jv_key'),
-contacts=LS('jv_ctc'),
-vURI=LS('jv_voice'),
-hist=[],
-busy=false,
-pending=null,
-cont=false,
-rec=null,
-listening=false,
-voices=[];
+let key=LS('jv_key');
+let contacts=LS('jv_ctc');
+let vURI=LS('jv_voice');
+let hist=[];
+let busy=false;
+let pending=null;
+let cont=false;
+let rec=null;
+let listening=false;
+let voices=[];
 
 const LAB={
 idle:'AGUARDANDO',
@@ -180,74 +225,113 @@ error:'ERRO'
 
 const setS=s=>{
 document.body.dataset.s=s;
-$('#st').textContent=LAB[s]
+$('#st').textContent=LAB[s]||s;
 };
 
 const cap=t=>{
-$('#cap').textContent=t
+$('#cap').textContent=t||'';
 };
 
 $('#wave').innerHTML='<b></b>'.repeat(11);
 
-const tick=()=>{
+function tick(){
+
 const d=new Date();
 
-$('#clock').textContent=d.toLocaleTimeString('pt-BR',{
+$('#clock').textContent=d.toLocaleTimeString(
+'pt-BR',
+{
 hour:'2-digit',
 minute:'2-digit'
-});
+}
+);
 
-$('#date').textContent=d.toLocaleDateString('pt-BR',{
+$('#date').textContent=d.toLocaleDateString(
+'pt-BR',
+{
 weekday:'long',
 day:'numeric',
 month:'long'
-});
-};
+}
+);
+
+}
 
 setInterval(tick,1000);
 tick();
 
 function loadVoices(){
+
 if(!window.speechSynthesis)return;
 
-voices=speechSynthesis.getVoices().filter(v=>/^(pt|en-GB)/i.test(v.lang));
+voices=speechSynthesis
+.getVoices()
+.filter(v=>/^(pt|en-GB)/i.test(v.lang));
 
 $('#voice').innerHTML=voices.map(v=>
-`<option value="${v.voiceURI}">${v.name} (${v.lang})</option>`
+`<option value="${v.voiceURI}">
+${v.name} (${v.lang})
+</option>`
 ).join('');
 
 const c=curVoice();
 
-if(c)$('#voice').value=c.voiceURI;
+if(c)
+$('#voice').value=c.voiceURI;
+
 }
 
 function curVoice(){
+
 return voices.find(v=>v.voiceURI===vURI)
-||voices.find(v=>/pt-BR/i.test(v.lang)&&/felipe/i.test(v.name))
-||voices.find(v=>/pt-BR/i.test(v.lang)&&/premium|enhanced|aprimorad/i.test(v.name))
+
+||voices.find(v=>
+/pt-BR/i.test(v.lang)&&/felipe/i.test(v.name)
+)
+
+||voices.find(v=>
+/pt-BR/i.test(v.lang)&&
+/premium|enhanced|aprimorad/i.test(v.name)
+)
+
 ||voices.find(v=>/pt-BR/i.test(v.lang))
+
 ||voices[0];
+
 }
 
 if(window.speechSynthesis){
+
 loadVoices();
+
 speechSynthesis.onvoiceschanged=loadVoices;
+
 }
 
 function speak(t){
+
 return new Promise(res=>{
-if(!window.speechSynthesis)return res();
+
+if(!window.speechSynthesis){
+res();
+return;
+}
 
 speechSynthesis.cancel();
 
 const u=new SpeechSynthesisUtterance(t);
+
 const v=curVoice();
 
 if(v){
+
 u.voice=v;
 u.lang=v.lang;
+
 }else{
+
 u.lang='pt-BR';
+
 }
 
 u.pitch=.9;
@@ -255,118 +339,196 @@ u.pitch=.9;
 let done=false;
 
 const finish=()=>{
+
 if(!done){
+
 done=true;
 res();
+
 }
+
 };
 
 u.onend=finish;
 u.onerror=finish;
 
-setTimeout(finish,t.length*100+4000);
+setTimeout(
+finish,
+Math.min(12000,Math.max(4000,t.length*100+4000))
+);
 
 speechSynthesis.speak(u);
+
 });
+
 }
 
 async function say(t,err){
+
 cap(t);
+
 setS(err?'error':'speaking');
+
 await speak(t);
+
 setS('idle');
 
-if(cont||pending)listen();
+if(cont||pending)
+listen();
+
 }
 
 const unlock=()=>{
-if(window.speechSynthesis)
-speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+
+if(window.speechSynthesis){
+
+speechSynthesis.speak(
+new SpeechSynthesisUtterance('')
+);
+
+}
+
 };
 
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const SR=
+window.SpeechRecognition||
+window.webkitSpeechRecognition;
 
 function listen(){
 
 if(!SR){
-cap('Este navegador não tem reconhecimento de voz. Use o microfone do teclado.');
+
+cap(
+'Este navegador não tem reconhecimento de voz. '+
+'Use o microfone do teclado.'
+);
+
 return;
+
 }
 
-if(listening||busy)return;
+if(listening||busy)
+return;
 
 rec=new SR();
+
 rec.lang='pt-BR';
 rec.interimResults=true;
+rec.continuous=false;
 
 let fin='';
 
 rec.onstart=()=>{
+
 listening=true;
+
 $('#mic').classList.add('on');
+
 setS('listening');
+
 };
 
 rec.onresult=e=>{
+
 let t='';
 
-for(const r of e.results)t+=r[0].transcript;
+for(const r of e.results)
+t+=r[0].transcript;
 
 fin=t;
+
 cap(t);
+
 };
 
 rec.onerror=e=>{
-if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+
+if(
+e.error==='not-allowed'||
+e.error==='service-not-allowed'
+){
+
 cont=false;
+
 sync();
-cap('Microfone bloqueado. Libere o microfone do Safari nas configurações do iPhone.');
+
+cap(
+'Microfone bloqueado. Libere o microfone do Safari '+
+'nas configurações do iPhone.'
+);
+
 }
+
 };
 
 rec.onend=()=>{
+
 listening=false;
+
 $('#mic').classList.remove('on');
 
 if(fin){
+
 onHeard(fin);
+
 }else{
+
 setS('idle');
 
-if(cont&&!busy)setTimeout(listen,300);
+if(cont&&!busy)
+setTimeout(listen,300);
+
 }
+
 };
 
 try{
+
 rec.start();
+
 }catch(e){}
+
 }
 
 function onHeard(t){
 
 if(cont){
 
-const i=t.toLowerCase().search(/j[aá]r?\s?vis/);
+const i=t
+.toLowerCase()
+.search(/j[aá]r?\s?vis/);
 
 if(i<0){
+
 setS('idle');
+
 setTimeout(listen,300);
+
 return;
+
 }
 
-t=t.slice(i).replace(/^j[aá]r?\s?vis[,.!?\s]*/i,'');
+t=t.slice(i)
+.replace(
+/^j[aá]r?\s?vis[,.!?\s]*/i,
+''
+);
 
-if(!t)return say('Pois não?');
+if(!t)
+return say('Pois não?');
+
 }
 
 handle(t);
+
 }
 
 async function handle(text){
 
 text=(text||'').trim();
 
-if(!text||busy)return;
+if(!text||busy)
+return;
 
 $('#txt').value='';
 
@@ -379,24 +541,43 @@ pending=null;
 $('#conf').classList.remove('on');
 
 return /\b(sim|confirmo|pode|claro|isso)\b/i.test(text)
+
 ?exec(p)
+
 :say('Cancelado.');
+
 }
 
 const d=new Date();
 
-if(/que horas|horas s[aã]o/i.test(text))
-return say(`São ${d.getHours()} horas e ${d.getMinutes()} minutos.`);
+if(/que horas|horas s[aã]o/i.test(text)){
 
-if(/que dia (é )?hoje|data de hoje/i.test(text))
-return say('Hoje é '+d.toLocaleDateString('pt-BR',{
+return say(
+`São ${d.getHours()} horas e ${d.getMinutes()} minutos.`
+);
+
+}
+
+if(/que dia (é )?hoje|data de hoje/i.test(text)){
+
+return say(
+'Hoje é '+
+d.toLocaleDateString(
+'pt-BR',
+{
 weekday:'long',
 day:'numeric',
 month:'long'
-})+'.');
+}
+)+'.'
+);
+
+}
 
 busy=true;
+
 setS('thinking');
+
 cap(text);
 
 hist.push({
@@ -414,67 +595,130 @@ content:p.say||''
 busy=false;
 
 exec(p);
+
 }
 
-/* GEMINI - INTERACTIONS API */
+/* =========================
+   GEMINI
+   ========================= */
 
 async function plan(){
 
-if(!key)
+if(!key){
+
 return{
+action:null,
+args:{},
 say:'Preciso da sua chave da API Gemini. Abra os ajustes.'
 };
 
-const en=/^en/i.test((curVoice()||{}).lang||'');
+}
 
-const now=new Date().toLocaleString('pt-BR',{
+const voice=curVoice();
+
+const en=/^en/i.test(
+(voice||{}).lang||''
+);
+
+const now=new Date().toLocaleString(
+'pt-BR',
+{
 dateStyle:'full',
 timeStyle:'short'
-});
+}
+);
 
-const sys=`Você é o J.A.R.V.I.S., assistente executivo e amigo do usuário. Seja educado, objetivo, sofisticado e com humor sutil.
+const sys=`
 
-${en?'Responda em inglês britânico e chame o usuário de sir.':'Responda em Português do Brasil.'}
+Você é o J.A.R.V.I.S., assistente executivo do usuário.
 
-Data e hora atual: ${now}.
+Seja educado, inteligente, objetivo, sofisticado e com humor sutil.
+
+${en
+?'Responda em inglês britânico e chame o usuário de sir.'
+:'Responda sempre em Português do Brasil.'
+}
+
+Data e hora atual:
+${now}
 
 Contatos disponíveis:
 ${contacts||'(nenhum)'}
 
-Responda SOMENTE como JSON válido neste formato:
+Você controla uma interface de assistente no iPhone.
 
-{"action":"nome ou null","args":{},"say":"resposta curta"}
+IMPORTANTE:
+Responda SOMENTE com um objeto JSON válido.
 
-Ações disponíveis:
+Formato:
 
-open_app:
-app = whatsapp, instagram, youtube, spotify, music, maps, mail, telegram, netflix, uber, waze, calendar, photos, facetime
+{
+  "action":"nome_da_acao",
+  "args":{},
+  "say":"resposta curta"
+}
 
-search:
-query
+Ações permitidas:
 
-navigate:
-to
+open_app
+args:
+{
+  "app":"whatsapp|instagram|youtube|spotify|music|maps|mail|telegram|netflix|uber|waze|calendar|photos|facetime"
+}
 
-weather:
-sem argumentos
+search
+args:
+{
+  "query":"..."
+}
 
-call:
-who
+navigate
+args:
+{
+  "to":"..."
+}
 
-message:
-who, text, via
+weather
+args:
+{}
 
-email:
-to, subject, body
+call
+args:
+{
+  "who":"..."
+}
 
-shortcut:
-name, input
+message
+args:
+{
+  "who":"...",
+  "text":"...",
+  "via":"whatsapp|sms"
+}
 
-private:
-informação privada que exige autenticação
+email
+args:
+{
+  "to":"...",
+  "subject":"...",
+  "body":"..."
+}
 
-Atalhos:
+shortcut
+args:
+{
+  "name":"...",
+  "input":"..."
+}
+
+private
+args:
+{
+  "request":"..."
+}
+
+Atalhos disponíveis:
+
 JARVIS Lanterna Ligar
 JARVIS Lanterna Desligar
 JARVIS Volume Mais
@@ -485,125 +729,199 @@ JARVIS Timer
 JARVIS Lembrete
 JARVIS Nota
 
-Regras:
-- Não use Markdown.
-- Não use emojis.
-- Nunca diga que executou algo que não executou.
-- Use a ação correspondente ao pedido.
-- Para abrir aplicativos, use open_app.
-- Para pesquisas, use search.
-- Para rotas, use navigate.
-- Para clima, use weather.
-- Para chamadas, use call.
-- Para mensagens, use message.
-- Para emails, use email.
-- Para lanterna e volume, use shortcut.
-- Os valores de args devem ser strings.
-- Se algo não for possível pelo iOS, explique honestamente.
-- Retorne somente JSON.`;
+REGRAS:
 
-const inputParts=[];
+1. Não use Markdown.
+2. Não use emojis.
+3. Nunca diga que executou algo que não executou.
+4. Para abrir aplicativos use open_app.
+5. Para pesquisar use search.
+6. Para rotas use navigate.
+7. Para clima use weather.
+8. Para chamadas use call.
+9. Para mensagens use message.
+10. Para emails use email.
+11. Para lanterna e volume use shortcut.
+12. Para comandos de Atalhos use shortcut.
+13. Os valores dentro de args devem ser strings.
+14. Se algo não puder ser feito pelo iOS, explique em say.
+15. Se o usuário apenas fizer uma pergunta, use action:null.
+16. Retorne SOMENTE JSON.
+`;
+
+const contents=[];
 
 for(const h of hist.slice(-10)){
-inputParts.push({
-type:'text',
-text:(h.role==='assistant'?'JARVIS: ':'Usuário: ')+h.content
+
+contents.push({
+
+role:h.role==='assistant'
+?'model'
+:'user',
+
+parts:[
+{
+text:h.content
+}
+]
+
 });
+
 }
 
 try{
 
+/*
+  MODELO ATUAL:
+  Gemini 3.5 Flash-Lite
+*/
+
+const url=
+'https://generativelanguage.googleapis.com/v1beta/models/' +
+'gemini-3.5-flash-lite:generateContent?key=' +
+encodeURIComponent(key);
+
+const body={
+
+systemInstruction:{
+parts:[
+{
+text:sys
+}
+]
+},
+
+contents:contents,
+
+generationConfig:{
+
+temperature:.4,
+
+maxOutputTokens:500,
+
+responseMimeType:'application/json',
+
+responseSchema:{
+
+type:'OBJECT',
+
+properties:{
+
+action:{
+type:'STRING',
+nullable:true
+},
+
+args:{
+type:'OBJECT',
+properties:{
+app:{type:'STRING',nullable:true},
+query:{type:'STRING',nullable:true},
+to:{type:'STRING',nullable:true},
+who:{type:'STRING',nullable:true},
+text:{type:'STRING',nullable:true},
+via:{type:'STRING',nullable:true},
+subject:{type:'STRING',nullable:true},
+body:{type:'STRING',nullable:true},
+name:{type:'STRING',nullable:true},
+input:{type:'STRING',nullable:true},
+request:{type:'STRING',nullable:true}
+}
+},
+
+say:{
+type:'STRING'
+}
+
+},
+
+required:[
+'action',
+'args',
+'say'
+]
+
+}
+
+}
+
+};
+
 const r=await fetch(
-'https://generativelanguage.googleapis.com/v1beta/interactions',
+
+url,
+
 {
 method:'POST',
+
 headers:{
-'Content-Type':'application/json',
-'x-goog-api-key':key
-},
-body:JSON.stringify({
-
-model:'gemini-3.5-flash-lite',
-
-input:inputParts,
-
-system_instruction:sys,
-
-generation_config:{
-thinking_level:'minimal'
+'Content-Type':'application/json'
 },
 
-response_format:{
-type:'text',
-mime_type:'application/json',
-schema:{
-type:'object',
-properties:{
-action:{
-type:'string'
-},
-args:{
-type:'object',
-additionalProperties:{
-type:'string'
-}
-},
-say:{
-type:'string'
-}
-},
-required:['action','args','say']
-}
+body:JSON.stringify(body)
+
 }
 
-})
-});
+);
 
 const j=await r.json();
 
 if(!r.ok){
 
+const msg=
+j?.error?.message||
+'Chave inválida ou requisição recusada.';
+
 return{
-say:'Erro da API Gemini: '+(j?.error?.message||'chave inválida ou requisição recusada.')
+action:null,
+args:{},
+say:'Erro da API Gemini: '+msg
 };
-}
-
-const t=j?.output_text?.trim()||'';
-
-if(!t){
-
-const steps=j?.steps||[];
-
-const texts=[];
-
-for(const step of steps){
-
-if(step?.content?.type==='text'&&step.content.text)
-texts.push(step.content.text);
-
-if(step?.text)
-texts.push(step.text);
 
 }
 
-if(texts.length)
-return JSON.parse(texts.join('').trim());
+const text=
+j?.candidates?.[0]?.content?.parts
+?.map(x=>x.text||'')
+.join('')
+.trim();
+
+if(!text){
 
 return{
+action:null,
+args:{},
 say:'A Gemini não retornou uma resposta.'
 };
+
 }
 
 try{
 
-return JSON.parse(
-t.replace(/```json/gi,'').replace(/```/g,'').trim()
-);
+const clean=text
+.replace(/```json/gi,'')
+.replace(/```/g,'')
+.trim();
+
+const parsed=JSON.parse(clean);
+
+if(!parsed.action)
+parsed.action=null;
+
+if(!parsed.args)
+parsed.args={};
+
+if(!parsed.say)
+parsed.say='Entendido.';
+
+return parsed;
 
 }catch(e){
 
 return{
-say:t
+action:null,
+args:{},
+say:text
 };
 
 }
@@ -611,15 +929,21 @@ say:t
 }catch(e){
 
 return{
-say:'Perdi a conexão com a Gemini. Tente novamente.'
+action:null,
+args:{},
+say:'Não consegui conectar à API Gemini.'
 };
 
 }
+
 }
 
-/* APLICATIVOS */
+/* =========================
+   APLICATIVOS
+   ========================= */
 
 const APPS={
+
 whatsapp:'whatsapp://',
 instagram:'instagram://',
 youtube:'youtube://',
@@ -634,24 +958,41 @@ waze:'waze://',
 calendar:'calshow://',
 photos:'photos-redirect://',
 facetime:'facetime://'
+
 };
 
 function who(w){
 
-w=(w||'').trim().toLowerCase();
+w=(w||'')
+.trim()
+.toLowerCase();
 
 for(const l of contacts.split('\n')){
 
 const[n,v]=l.split('=');
 
-if(n&&v&&n.trim().toLowerCase()===w)
-return v.replace(/[^\d+]/g,'');
+if(
+n&&
+v&&
+n.trim().toLowerCase()===w
+){
+
+return v.replace(
+/[^\d+]/g,
+''
+);
 
 }
 
-const d=w.replace(/[^\d+]/g,'');
+}
+
+const d=w.replace(
+/[^\d+]/g,
+''
+);
 
 return d.length>=8?d:'';
+
 }
 
 const enc=encodeURIComponent;
@@ -659,19 +1000,31 @@ const enc=encodeURIComponent;
 const ACT={
 
 open_app:a=>{
+
 const app=(a.app||'').toLowerCase();
 
 return APPS[app]
+
 ?{u:APPS[app]}
+
 :{err:'Ainda não conheço esse aplicativo.'};
+
 },
 
 search:a=>({
-u:'https://www.google.com/search?q='+enc(a.query||'')
+
+u:
+'https://www.google.com/search?q='+
+enc(a.query||'')
+
 }),
 
 navigate:a=>({
-u:'maps://?daddr='+enc(a.to||'')
+
+u:
+'maps://?daddr='+
+enc(a.to||'')
+
 }),
 
 call:a=>{
@@ -679,8 +1032,19 @@ call:a=>{
 const n=who(a.who);
 
 return n
-?{u:'tel:'+n,risk:1}
-:{err:'Não tenho o número de '+(a.who||'ninguém')+'. Cadastre nos ajustes.'};
+
+?{
+u:'tel:'+n,
+risk:1
+}
+
+:{
+err:
+'Não tenho o número de '+
+(a.who||'ninguém')+
+'. Cadastre nos ajustes.'
+};
+
 },
 
 message:a=>{
@@ -688,31 +1052,52 @@ message:a=>{
 const n=who(a.who);
 const t=enc(a.text||'');
 
-if(a.via==='sms')
+if(a.via==='sms'){
+
 return{
 u:`sms:${n}&body=${t}`,
 risk:1
 };
 
+}
+
 return n
+
 ?{
-u:`whatsapp://send?phone=${n.replace('+','')}&text=${t}`,
+u:
+`whatsapp://send?phone=${n.replace('+','')}&text=${t}`,
 risk:1
 }
+
 :{
-err:'Preciso do número de '+(a.who||'quem')+' para o WhatsApp. Cadastre nos ajustes.'
+err:
+'Preciso do número de '+
+(a.who||'quem')+
+' para o WhatsApp. Cadastre nos ajustes.'
 };
+
 },
 
 email:a=>({
-u:`mailto:${a.to||''}?subject=${enc(a.subject||'')}&body=${enc(a.body||'')}`,
+
+u:
+`mailto:${a.to||''}?subject=${enc(a.subject||'')}&body=${enc(a.body||'')}`,
+
 risk:1
+
 }),
 
 shortcut:a=>({
-u:'shortcuts://run-shortcut?name='+
+
+u:
+'shortcuts://run-shortcut?name='+
 enc(a.name||'')+
-(a.input?'&input=text&text='+enc(a.input):'')
+(
+a.input
+?'&input=text&text='+enc(a.input)
+:''
+)
+
 })
 
 };
@@ -724,11 +1109,15 @@ const a=p.args||{};
 if(p.action==='private'){
 
 setS('auth');
+
 cap('Autenticação necessária.');
 
 return(await faceId())
+
 ?say('Acesso autorizado.')
+
 :say('Autenticação negada.',1);
+
 }
 
 if(p.action==='weather')
@@ -737,7 +1126,9 @@ return weather();
 const f=ACT[p.action];
 
 if(!f)
-return say(p.say||'Sem resposta.');
+return say(
+p.say||'Sem resposta.'
+);
 
 const r=f(a);
 
@@ -746,14 +1137,23 @@ return say(r.err,1);
 
 if(r.risk&&!p.ok){
 
-pending=Object.assign({},p,{ok:true});
+pending=Object.assign(
+{},
+p,
+{ok:true}
+);
 
 $('#conf').classList.add('on');
 
-return say('Isso requer a sua confirmação. Posso prosseguir?');
+return say(
+'Isso requer a sua confirmação. Posso prosseguir?'
+);
+
 }
 
-await say(p.say);
+await say(
+p.say||'Concluído.'
+);
 
 const l=$('#lnk');
 
@@ -762,100 +1162,177 @@ l.textContent='Toque aqui se não abriu';
 l.hidden=false;
 
 location.href=r.u;
+
 }
 
-/* CLIMA */
+/* =========================
+   CLIMA
+   ========================= */
 
 const WMO=c=>
-c==0?'céu limpo':
-c<4?'parcialmente nublado':
-c<50?'neblina':
-c<70?'chuva':
-c<80?'neve':
-'pancadas de chuva';
+
+c==0
+?'céu limpo'
+
+:c<4
+?'parcialmente nublado'
+
+:c<50
+?'neblina'
+
+:c<70
+?'chuva'
+
+:c<80
+?'neve'
+
+:'pancadas de chuva';
 
 function weather(){
 
 setS('thinking');
 
 navigator.geolocation.getCurrentPosition(
+
 async p=>{
 
 try{
 
-const j=await(
-await fetch(
-`https://api.open-meteo.com/v1/forecast?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`
-)
-).json();
+const r=await fetch(
+
+`https://api.open-meteo.com/v1/forecast?`+
+`latitude=${p.coords.latitude}`+
+`&longitude=${p.coords.longitude}`+
+`&current=temperature_2m,weather_code`+
+`&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max`+
+`&timezone=auto`
+
+);
+
+const j=await r.json();
 
 const c=j.current;
 const d=j.daily;
 
 say(
-`Agora faz ${Math.round(c.temperature_2m)} graus, ${WMO(c.weather_code)}. Hoje a máxima é ${Math.round(d.temperature_2m_max[0])} e a mínima ${Math.round(d.temperature_2m_min[0])}, com ${d.precipitation_probability_max[0]}% de chance de chuva.`
+
+`Agora faz ${Math.round(c.temperature_2m)} graus, `+
+`${WMO(c.weather_code)}. `+
+`Hoje a máxima é ${Math.round(d.temperature_2m_max[0])} `+
+`e a mínima ${Math.round(d.temperature_2m_min[0])}, `+
+`com ${d.precipitation_probability_max[0]}% de chance de chuva.`
+
 );
 
 }catch(e){
 
-say('Não consegui consultar o clima.',1);
+say(
+'Não consegui consultar o clima.',
+1
+);
+
 }
 
 },
-()=>say('Preciso da permissão de localização do Safari.',1),
-{timeout:10000}
-);
+
+()=>say(
+'Preciso da permissão de localização do Safari.',
+1
+),
+
+{
+timeout:10000
 }
 
-/* FACE ID */
+);
+
+}
+
+/* =========================
+   FACE ID
+   ========================= */
 
 async function faceId(){
 
 try{
 
-const ch=crypto.getRandomValues(new Uint8Array(32));
+const ch=
+crypto.getRandomValues(
+new Uint8Array(32)
+);
+
 const id=LS('jv_cred');
 
 if(!id){
 
-const c=await navigator.credentials.create({
+const c=
+await navigator.credentials.create({
 
 publicKey:{
 
 challenge:ch,
 
-rp:{name:'JARVIS'},
+rp:{
+name:'JARVIS'
+},
 
 user:{
-id:crypto.getRandomValues(new Uint8Array(16)),
+
+id:
+crypto.getRandomValues(
+new Uint8Array(16)
+),
+
 name:'jarvis',
+
 displayName:'JARVIS'
+
 },
 
 pubKeyCredParams:[
-{type:'public-key',alg:-7},
-{type:'public-key',alg:-257}
+
+{
+type:'public-key',
+alg:-7
+},
+
+{
+type:'public-key',
+alg:-257
+}
+
 ],
 
 authenticatorSelection:{
+
 authenticatorAttachment:'platform',
+
 userVerification:'required'
+
 },
 
 timeout:60000
+
 }
+
 });
+
+if(!c)
+return false;
 
 SV(
 'jv_cred',
+
 btoa(
 String.fromCharCode(
 ...new Uint8Array(c.rawId)
 )
 )
+
 );
 
 return true;
+
 }
 
 await navigator.credentials.get({
@@ -865,17 +1342,22 @@ publicKey:{
 challenge:ch,
 
 allowCredentials:[{
+
 type:'public-key',
+
 id:Uint8Array.from(
 atob(id),
 x=>x.charCodeAt(0)
 )
+
 }],
 
 userVerification:'required',
+
 timeout:60000
 
 }
+
 });
 
 return true;
@@ -883,39 +1365,62 @@ return true;
 }catch(e){
 
 return false;
-}
+
 }
 
-/* CONTROLES */
+}
+
+/* =========================
+   CONTROLES
+   ========================= */
 
 const sync=()=>{
+
 $('#cont').textContent=
 'Escuta contínua ("Jarvis, ..."): '+
 (cont?'ligada':'desligada');
+
 };
 
 $('#mic').onclick=()=>{
+
 unlock();
 
 if(listening&&rec)
 rec.stop();
 else
 listen();
+
 };
 
 $('#snd').onclick=()=>{
+
 unlock();
-handle($('#txt').value);
+
+handle(
+$('#txt').value
+);
+
 };
 
-$('#txt').addEventListener('keydown',e=>{
+$('#txt').addEventListener(
+'keydown',
+e=>{
+
 if(e.key==='Enter'){
+
 unlock();
-handle($('#txt').value);
+
+handle(
+$('#txt').value
+);
+
 }
+
 });
 
 $('#cont').onclick=()=>{
+
 unlock();
 
 cont=!cont;
@@ -924,11 +1429,14 @@ sync();
 
 if(cont)
 listen();
+
 else if(rec&&listening)
 rec.stop();
+
 };
 
 $('#yes').onclick=()=>{
+
 const p=pending;
 
 pending=null;
@@ -937,38 +1445,65 @@ $('#conf').classList.remove('on');
 
 if(p)
 exec(p);
+
 };
 
 $('#no').onclick=()=>{
+
 pending=null;
+
 $('#conf').classList.remove('on');
+
 say('Cancelado.');
+
 };
 
 $('#gear').onclick=()=>{
+
 $('#key').value=key;
 $('#ctc').value=contacts;
+
 loadVoices();
+
 $('#cfg').classList.add('on');
+
 };
 
 $('#close').onclick=()=>{
+
 $('#cfg').classList.remove('on');
+
 };
 
 $('#save').onclick=()=>{
+
 key=$('#key').value.trim();
+
 contacts=$('#ctc').value;
+
 vURI=$('#voice').value;
 
-SV('jv_key',key);
-SV('jv_ctc',contacts);
-SV('jv_voice',vURI);
+SV(
+'jv_key',
+key
+);
+
+SV(
+'jv_ctc',
+contacts
+);
+
+SV(
+'jv_voice',
+vURI
+);
 
 $('#cfg').classList.remove('on');
+
 };
 
 $('#go').onclick=()=>{
+
 unlock();
 
 $('#intro').classList.remove('on');
@@ -977,14 +1512,35 @@ if(!key)
 $('#gear').click();
 
 const h=new Date().getHours();
-const en=/^en/i.test((curVoice()||{}).lang||'');
+
+const en=/^en/i.test(
+(curVoice()||{}).lang||''
+);
 
 say(
+
 en
-?`${h<12?'Good morning':h<18?'Good afternoon':'Good evening'}, sir. How may I assist you?`
-:`${h<5?'Boa madrugada':h<12?'Bom dia':h<18?'Boa tarde':'Boa noite'}. Como posso ajudá-lo?`
+
+?`${h<12
+?'Good morning'
+:h<18
+?'Good afternoon'
+:'Good evening'}, sir. How may I assist you?`
+
+:`${
+h<5
+?'Boa madrugada'
+:h<12
+?'Bom dia'
+:h<18
+?'Boa tarde'
+:'Boa noite'
+}. Como posso ajudá-lo?`
+
 );
+
 };
+
 </script>
 
 </body>
