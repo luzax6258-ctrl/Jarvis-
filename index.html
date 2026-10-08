@@ -1,81 +1,96 @@
-const $=id=>document.getElementById(id),LS=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},SV=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
-const MODEL='gemini-2.5-flash-lite';
-const S={name:LS('jarvis_name'),key:LS('jarvis_key'),voice:LS('jarvis_voice'),rate:+LS('jarvis_rate')||.95,pitch:+LS('jarvis_pitch')||.85,auto:LS('jarvis_auto')==='1'};
-let voices=[],hist=[],busy=false,listening=false,rec=null,stream=null,facing='environment',last='';
-const setS=(s,t)=>{document.body.dataset.s=s;$('st').textContent=t||({idle:'SISTEMA PRONTO',listening:'ESCUTANDO',thinking:'PROCESSANDO',speaking:'JARVIS FALANDO',error:'ERRO'})[s]};
-const show=t=>{$('resp').textContent=t},norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-$('wave').innerHTML='<b></b>'.repeat(23);[...$('wave').children].forEach((b,i)=>b.style.animationDelay=(i*.07%.6)+'s');
-const tick=()=>{const d=new Date();$('time').textContent=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});$('date').textContent=d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})};setInterval(tick,1000);tick();
-const curVoice=()=>voices.find(v=>v.voiceURI===S.voice)||voices.find(v=>/felipe/i.test(v.name)&&/pt/i.test(v.lang))||voices[0];
-function loadVoices(){if(!window.speechSynthesis)return;const rk=v=>{const l=v.lang.replace('_','-').toLowerCase();return l==='pt-br'?0:l.startsWith('pt')?1:l==='en-gb'?2:l.startsWith('en')?3:4};
- voices=speechSynthesis.getVoices().slice().sort((a,b)=>rk(a)-rk(b)||a.name.localeCompare(b.name));
- $('vsel').innerHTML=voices.map(v=>`<option value="${v.voiceURI}">${v.name} · ${v.lang}</option>`).join('');const c=curVoice();if(c)$('vsel').value=c.voiceURI}
-if(window.speechSynthesis){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
-const unlock=()=>{if(window.speechSynthesis)speechSynthesis.speak(new SpeechSynthesisUtterance(''))};
-function speak(t){return new Promise(res=>{if(!window.speechSynthesis){show(t);return res()}speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(String(t).replace(/[*#`_]/g,'')),v=curVoice();if(v){u.voice=v;u.lang=v.lang}else u.lang='pt-BR';u.rate=S.rate;u.pitch=S.pitch;
- let d=false,tm;const f=()=>{if(d)return;d=true;clearTimeout(tm);res()};tm=setTimeout(f,String(t).length*110+5000);
- u.onstart=()=>setS('speaking');u.onend=u.onerror=f;speechSynthesis.speak(u)})}
-async function say(t,err){show(t);setS(err?'error':'speaking');await speak(t);setS('idle');if(S.auto&&!busy)listen()}
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-function listen(){if(!SR){show('Sem reconhecimento de voz neste navegador. Digite abaixo.');return}if(listening||busy)return;
- rec=new SR();rec.lang='pt-BR';rec.interimResults=true;let fin='';
- rec.onstart=()=>{listening=true;$('mic').classList.add('on');setS('listening');show('Estou ouvindo…')};
- rec.onresult=e=>{fin=[...e.results].map(r=>r[0].transcript).join('');show(fin)};
- rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){S.auto=false;setS('error','MICROFONE BLOQUEADO');show('Libere o microfone em Ajustes › Safari › Microfone, ou digite abaixo.')}};
- rec.onend=()=>{listening=false;$('mic').classList.remove('on');if(fin)handle(fin);else if(document.body.dataset.s==='listening')setS('idle')};
- try{rec.start()}catch(e){}}
-const APPS={whatsapp:'whatsapp://',instagram:'instagram://',youtube:'youtube://',spotify:'spotify://',mapas:'maps://',musica:'music://',fotos:'photos-redirect://',calendario:'calshow://',notas:'mobilenotes://',mensagens:'sms:',telefone:'tel:',facetime:'facetime://',email:'message://',telegram:'tg://',netflix:'nflx://',uber:'uber://',waze:'waze://',tiktok:'snssdk1233://'};
-async function handle(text){text=(text||'').trim();if(!text||busy)return;$('txt').value='';busy=true;
- try{await route(text)}catch(e){await say('Houve uma falha. Tente novamente.',1)}busy=false;if(S.auto&&!listening)listen()}
-async function route(text){const q=norm(text),d=new Date();let m;
- if(/que horas|horas sao/.test(q))return say(`São ${d.getHours()} horas e ${d.getMinutes()} minutos.`);
- if(/que dia (e )?hoje|qual a data/.test(q))return say('Hoje é '+d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+'.');
- if(/o que voce (ta |esta )?(ve|vendo)|que (voce )?(ta|esta) vendo|analis[ae] (a )?(imagem|foto)/.test(q)){await say('Ativando visão.');return openCam(true)}
- if(/(abr[ae]|abrir|ligar|liga|ativ[ae]r?) (a |minha )?camera|tir[ae]r? (uma )?foto/.test(q)){await say('Abrindo a câmera.');return openCam()}
- const app=Object.keys(APPS).find(k=>q.includes(k));
- if(app&&/\b(abr[ae]|abrir|abra|ir para|va para)\b/.test(q)){await say('Abrindo '+app+'.');location.href=APPS[app];return}
- if(m=q.match(/(?:pesquis[ae]r?|procur[ae]r?|busc[ae]r?)(?: por| sobre)? (.+)/)){await say('Pesquisando.');location.href='https://www.google.com/search?q='+encodeURIComponent(m[1]);return}
- if(m=q.match(/(?:me leve|navegar|rota|ir) (?:para|ate|pra) (.+)/)){await say('Traçando a rota.');location.href='maps://?daddr='+encodeURIComponent(m[1]);return}
- if(/lanterna|volume|brilho|nao perturbe|modo aviao|bluetooth/.test(q)&&/(lig|deslig|aument|diminu|ativ|desativ|abaix|suba|coloc)/.test(q))return say('O iOS não permite que uma página web controle isso. Só é possível por um Atalho do iPhone.',1);
- setS('thinking');return say(await ask(text))}
-async function ask(q,img){if(!S.key)return 'Minha inteligência ainda não foi configurada. Abra os ajustes e cole sua chave Gemini.';
- const l=((curVoice()||{}).lang||'pt-BR').slice(0,2),lang=l==='en'?'inglês britânico, chamando o usuário de "sir"':l==='es'?'espanhol':'português do Brasil';
- const sys=`Você é o J.A.R.V.I.S., assistente pessoal futurista: elegante, educado, calmo, inteligente e levemente bem-humorado. Responda sempre em ${lang}, em 1 a 3 frases curtas, sem markdown, sem listas e sem emojis, pois sua resposta será falada em voz alta. Nome do usuário: ${S.name||'senhor'}. Agora: ${new Date().toLocaleString('pt-BR')}. Você não controla o celular além de abrir apps e a câmera: nunca diga que fez algo que não fez. Não finja ser o personagem de nenhum filme.`;
- const parts=[{text:q}];if(img)parts.push({inline_data:{mime_type:'image/jpeg',data:img}});
- const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(S.key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:[...hist.slice(-8),{role:'user',parts}],generationConfig:{temperature:.7,maxOutputTokens:400}})});
- const j=await r.json();
- if(!r.ok)return r.status===429?'Muitas perguntas seguidas. Espere um minuto e tente de novo.':'Erro da inteligência: '+((j.error||{}).message||r.status);
- const a=(((j.candidates||[{}])[0]||{}).content||{parts:[]}).parts.map(p=>p.text||'').join('').trim();
- if(!a)return 'Não obtive resposta. Tente reformular.';
- hist.push({role:'user',parts:[{text:q}]},{role:'model',parts:[{text:a}]});return a}
-const stopCam=()=>{if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}};
-async function openCam(auto){$('camov').classList.add('on');$('shot').hidden=true;$('vid').hidden=false;last='';$('chint').textContent='Câmera ao vivo. 👁 faz o JARVIS descrever o que vê.';stopCam();
- try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing},audio:false});$('vid').srcObject=stream;if(auto)setTimeout(analyze,1800)}
- catch(e){$('chint').textContent='Sem acesso à câmera ao vivo. Toque em 📱 para usar a câmera do iPhone.'}}
-const closeCam=()=>{stopCam();$('camov').classList.remove('on')};
-function grab(src,w,h){const c=document.createElement('canvas'),k=Math.min(1,768/Math.max(w,h));c.width=w*k;c.height=h*k;c.getContext('2d').drawImage(src,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.8)}
-function snap(){const v=$('vid');if(v.hidden||!v.videoWidth)return false;const u=grab(v,v.videoWidth,v.videoHeight);$('shot').src=u;$('shot').hidden=false;v.hidden=true;last=u.split(',')[1];$('chint').textContent='Segure a foto para salvar nas Fotos.';return true}
-async function analyze(){if(!$('vid').hidden&&!snap())return;if(!last)return;const img=last;closeCam();busy=true;setS('thinking');
- try{await say(await ask('Descreva brevemente o que você vê nesta imagem.',img))}catch(e){await say('Não consegui analisar a imagem.',1)}busy=false}
-$('bcam').onclick=()=>{unlock();openCam()};$('cclose').onclick=closeCam;$('csnap').onclick=snap;$('cai').onclick=analyze;
-$('cflip').onclick=()=>{facing=facing==='environment'?'user':'environment';openCam()};
-$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{const u=grab(im,im.width,im.height);$('shot').src=u;$('shot').hidden=false;$('vid').hidden=true;stopCam();last=u.split(',')[1];$('chint').textContent='Toque em 👁 para analisar ou segure a foto para salvar.';URL.revokeObjectURL(im.src)};im.src=URL.createObjectURL(f)};
-$('mic').onclick=()=>{unlock();if(listening&&rec)rec.stop();else listen()};
-$('snd').onclick=()=>{unlock();handle($('txt').value)};
-$('txt').addEventListener('keydown',e=>{if(e.key==='Enter'){unlock();handle($('txt').value)}});
-$('stop').onclick=()=>{if(window.speechSynthesis)speechSynthesis.cancel();if(rec)try{rec.stop()}catch(e){}S.auto=false;setS('idle')};
-$('bset').onclick=()=>{unlock();$('name').value=S.name;$('key').value=S.key;$('rate').value=S.rate;$('pitch').value=S.pitch;$('auto').checked=S.auto;loadVoices();$('ov').classList.add('on')};
-$('sclose').onclick=()=>$('ov').classList.remove('on');
-function test(){unlock();S.voice=$('vsel').value;S.rate=+$('rate').value;S.pitch=+$('pitch').value;const v=voices.find(x=>x.voiceURI===S.voice)||{},en=/^en/i.test(v.lang||''),n=$('name').value||(en?'sir':'senhor');
- speak(en?`Good evening, ${n}. All systems online.`:`Boa noite, ${n}. Sistemas online. Estou pronto.`)}
-document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const p=b.dataset.p.split(',');$('pitch').value=p[0];$('rate').value=p[1];test()});
-$('vtest').onclick=test;
-$('save').onclick=()=>{S.name=$('name').value.trim();S.key=$('key').value.trim();S.voice=$('vsel').value;S.rate=+$('rate').value;S.pitch=+$('pitch').value;S.auto=$('auto').checked;
- SV('jarvis_name',S.name);SV('jarvis_key',S.key);SV('jarvis_voice',S.voice);SV('jarvis_rate',S.rate);SV('jarvis_pitch',S.pitch);SV('jarvis_auto',S.auto?'1':'0');
- $('ov').classList.remove('on');say('Configurações salvas. Sistemas prontos.')};
-if(!S.key)show('Abra ⚙️ e cole sua chave Gemini para começar.');
-const cv=$('fx'),cx=cv.getContext('2d');let P=[];
-function rs(){cv.width=innerWidth;cv.height=innerHeight;P=Array.from({length:36},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.6+.4,v:Math.random()*.25+.05}))}
-addEventListener('resize',rs);rs();
-(function f(){cx.clearRect(0,0,cv.width,cv.height);cx.fillStyle='rgba(77,227,255,.5)';for(const p of P){p.y-=p.v;if(p.y<0){p.y=cv.height;p.x=Math.random()*cv.width}cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fill()}requestAnimationFrame(f)})();
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#02070d"><title>JARVIS</title>
+<style>
+:root{--c:#4de3ff;--bg:#02070d;--line:rgba(77,227,255,.22);--mut:#7da5ad}
+body[data-s=thinking]{--c:#9b8cff}body[data-s=error]{--c:#ff6b6b}body[data-s=listening]{--c:#7dfcd6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:#e9fcff;font-family:-apple-system,"SF Pro Display",sans-serif}
+body{background:radial-gradient(circle at 50% 38%,#0a3a4a55,transparent 45%),radial-gradient(circle at 50% 110%,#06406055,transparent 40%),var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#app{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom))}
+.top{width:100%;display:flex;justify-content:space-between;align-items:center}
+.logo{letter-spacing:6px;font-size:12px;font-weight:600;color:#bceff6}
+.logo i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);margin-right:9px}
+.gear{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:#0a1c2599;font-size:18px}
+.time{margin-top:10px;font-size:44px;font-weight:200;letter-spacing:6px;text-shadow:0 0 22px var(--c)}
+.date{font-size:11px;letter-spacing:2px;color:var(--mut);text-transform:capitalize}
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
+.orb{position:relative;width:min(58vw,240px);aspect-ratio:1;flex:none}
+.orb>*{position:absolute;border-radius:50%}
+.o1{inset:0;border:1px dashed var(--line);animation:spin 50s linear infinite}
+.o2{inset:7%;background:repeating-conic-gradient(var(--c) 0 .8deg,transparent .8deg 6deg);opacity:.5;-webkit-mask:radial-gradient(circle closest-side,transparent 92%,#000 93%);mask:radial-gradient(circle closest-side,transparent 92%,#000 93%);animation:spin 70s linear infinite reverse}
+.o3{inset:14%;background:conic-gradient(transparent 0,var(--c) 35%,transparent 60%);-webkit-mask:radial-gradient(circle closest-side,transparent 94%,#000 95%);mask:radial-gradient(circle closest-side,transparent 94%,#000 95%);animation:spin 5s linear infinite}
+.o4{inset:24%;border:2px solid var(--c);box-shadow:0 0 28px var(--c),inset 0 0 28px var(--c);opacity:.7}
+.core{inset:36%;background:radial-gradient(circle,#fff 0,var(--c) 38%,transparent 70%);box-shadow:0 0 50px var(--c);animation:pulse 3s ease-in-out infinite}
+body[data-s=listening] .core,body[data-s=speaking] .core{animation-duration:.7s}
+body[data-s=thinking] .o3{animation-duration:1s}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{transform:scale(1.18);opacity:.85}}
+.wave{display:flex;gap:3px;height:30px;align-items:center;margin-top:14px}
+.wave b{width:3px;height:4px;border-radius:2px;background:var(--c);opacity:.8}
+body[data-s=listening] .wave b,body[data-s=speaking] .wave b{animation:bar .8s ease-in-out infinite}
+@keyframes bar{50%{height:28px}}
+#st{margin-top:8px;font-size:10px;letter-spacing:4px;color:var(--c)}
+#resp{margin-top:10px;width:100%;max-height:24vh;overflow-y:auto;text-align:center;font-size:16px;line-height:1.5;padding:0 6px}
+.dock{width:100%;max-width:520px;background:#06141dcc;border:1px solid var(--line);border-radius:28px;padding:10px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.row{display:flex;gap:8px;align-items:center}.row+.row{margin-top:8px}
+.dock input{flex:1;min-width:0;height:42px;border-radius:21px;border:1px solid var(--line);background:#020a0f;color:#fff;padding:0 16px;font-size:16px;outline:none}
+.ib{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:#0a1c25;font-size:19px;flex:none;display:grid;place-items:center}
+.mic{flex:1;height:54px;border-radius:27px;border:1px solid var(--c);background:linear-gradient(#17647a,#04232d);font-size:15px;letter-spacing:3px;box-shadow:inset 0 0 18px rgba(77,227,255,.2)}
+.mic.on{background:var(--c);color:#02070d;box-shadow:0 0 30px var(--c)}
+.ov{position:fixed;inset:0;z-index:20;background:#000a;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:none;align-items:flex-end;justify-content:center}
+.ov.on{display:flex}
+.sheet{width:100%;max-width:560px;max-height:92%;overflow-y:auto;background:linear-gradient(#0a1c26,#030c12);border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 6px;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+.sheet label{display:block;margin:12px 0 6px;font-size:11px;color:var(--mut)}
+.sheet input[type=text],.sheet input[type=password],.sheet select{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:#020a0f;color:#fff;padding:0 12px;font-size:16px}
+.sheet input[type=range]{width:100%}
+.chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#0a1c25;border-radius:16px;padding:8px 14px;font-size:13px}
+.save{width:100%;height:48px;margin-top:16px;border-radius:14px;border:1px solid var(--c);background:#0a3541}
+.hint{font-size:11px;line-height:1.5;color:#7699a1;margin-top:10px}
+#camov{background:#000;flex-direction:column;align-items:stretch}
+#camov video,#camov img{flex:1;min-height:0;width:100%;object-fit:cover}
+#chint{text-align:center;font-size:12px;color:var(--mut);padding:6px;background:#02070d}
+.camb{display:flex;justify-content:space-around;align-items:center;padding:8px 10px calc(16px + env(safe-area-inset-bottom));background:#02070d}
+.snap{width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:var(--c)}
+</style></head>
+<body data-s="idle"><canvas id="fx"></canvas>
+<div id="app">
+<div class="top"><div class="logo"><i></i>J.A.R.V.I.S.</div><button class="gear" id="bset">⚙️</button></div>
+<div class="time" id="time">00:00</div><div class="date" id="date"></div>
+<div class="stage">
+<div class="orb"><div class="o1"></div><div class="o2"></div><div class="o3"></div><div class="o4"></div><div class="core"></div></div>
+<div class="wave" id="wave"></div><div id="st">SISTEMA PRONTO</div>
+<div id="resp">Toque em 🎙 e fale comigo.</div>
+</div>
+<div class="dock">
+<div class="row"><input id="txt" type="text" placeholder="Digite um comando…" enterkeyhint="send" autocomplete="off"><button class="ib" id="snd">➤</button></div>
+<div class="row"><button class="ib" id="bcam">📷</button><button class="mic" id="mic">🎙 FALAR</button><button class="ib" id="stop">⏹</button></div>
+</div>
+</div>
+
+<div class="ov" id="ov"><div class="sheet">
+<h2>⚙️ Ajustes <button class="ib" id="sclose" style="width:36px;height:36px;font-size:15px">✕</button></h2>
+<label>Seu nome</label><input id="name" type="text" placeholder="Como devo chamar você?">
+<label>Chave Gemini</label><input id="key" type="password" placeholder="Cole sua chave aqui" autocomplete="off">
+<label>Voz (todas as vozes do seu iPhone)</label><select id="vsel"></select>
+<div class="chips"><button class="chip" data-p="0.8,0.9">🎩 Mordomo</button><button class="chip" data-p="1,1">🙂 Natural</button><button class="chip" data-p="0.6,0.8">🎬 Grave</button><button class="chip" data-p="1.3,1.2">⚡ Rápida</button></div>
+<label>Velocidade</label><input id="rate" type="range" min=".5" max="1.6" step=".05">
+<label>Tom (grave ↔ agudo)</label><input id="pitch" type="range" min=".4" max="1.6" step=".05">
+<label><input id="auto" type="checkbox"> Modo conversa (volta a ouvir sozinho)</label>
+<button class="chip" id="vtest" style="margin-top:8px">🔊 Testar voz</button>
+<button class="save" id="save">Salvar</button>
+<div class="hint">Mais vozes: Ajustes do iPhone › Acessibilidade › Conteúdo Falado › Vozes. Sem som? Tire o iPhone do silencioso. Se escolher voz em inglês, o JARVIS responde em inglês.</div>
+</div></div>
+
+<div class="ov" id="camov">
+<video id="vid" playsinline autoplay muted></video><img id="shot" hidden alt="">
+<div id="chint">Câmera ao vivo. 👁 faz o JARVIS descrever o que vê.</div>
+<div class="camb"><button class="ib" id="cflip">⟲</button><button class="snap" id="csnap"></button><button class="ib" id="cai">👁</button>
+<label class="ib">📱<input id="file" type="file" accept="image/*" capture="environment" hidden></label><button class="ib" id="cclose">✕</button></div>
+</div>
+
+<script src="app.js"></script></body></html>
