@@ -91,6 +91,391 @@ body[data-s=listening] .wave b,body[data-s=speaking] .wave b{animation:bar .8s e
 <div id="chint">Câmera ao vivo. 👁 faz o JARVIS descrever o que vê.</div>
 <div class="camb"><button class="ib" id="cflip">⟲</button><button class="snap" id="csnap"></button><button class="ib" id="cai">👁</button>
 <label class="ib">📱<input id="file" type="file" accept="image/*" capture="environment" hidden></label><button class="ib" id="cclose">✕</button></div>
-</div>
+</div><script>
+const $ = id => document.getElementById(id);
 
-<script src="app.js"></script></body></html>
+let voices = [];
+let recognition = null;
+let stream = null;
+let facing = "environment";
+
+function loadVoices(){
+  voices = speechSynthesis.getVoices();
+  const sel = $("vsel");
+  if(!sel) return;
+
+  sel.innerHTML = "";
+
+  voices
+    .filter(v => v.lang.toLowerCase().startsWith("pt"))
+    .forEach((v,i)=>{
+      const o = document.createElement("option");
+      o.value = voices.indexOf(v);
+      o.textContent = v.name + " — " + v.lang;
+      sel.appendChild(o);
+    });
+}
+
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+$("bset").onclick = () => {
+  $("name").value = localStorage.getItem("jarvis_name") || "";
+  $("key").value = localStorage.getItem("jarvis_key") || "";
+  $("ov").classList.add("on");
+  loadVoices();
+};
+
+$("sclose").onclick = () => {
+  $("ov").classList.remove("on");
+};
+
+$("save").onclick = () => {
+  localStorage.setItem("jarvis_name",$("name").value);
+  localStorage.setItem("jarvis_key",$("key").value);
+
+  $("ov").classList.remove("on");
+
+  speak("Configurações salvas. Sistema pronto.");
+};
+
+function speak(text){
+
+  speechSynthesis.cancel();
+
+  const u = new SpeechSynthesisUtterance(text);
+
+  u.lang = "pt-BR";
+  u.rate = parseFloat($("rate").value || .8);
+  u.pitch = parseFloat($("pitch").value || .9);
+  u.volume = 1;
+
+  const selected = $("vsel").value;
+
+  if(selected && voices[selected]){
+    u.voice = voices[selected];
+  }else{
+    const br = voices.find(v =>
+      v.lang.toLowerCase() === "pt-br"
+    );
+
+    if(br) u.voice = br;
+  }
+
+  u.onstart = () => {
+    document.body.dataset.s = "speaking";
+    $("st").textContent = "JARVIS FALANDO";
+  };
+
+  u.onend = () => {
+    document.body.dataset.s = "idle";
+    $("st").textContent = "SISTEMA PRONTO";
+  };
+
+  speechSynthesis.speak(u);
+}
+
+$("vtest").onclick = () => {
+  speak(
+    "Boa noite. Sistemas principais online. Estou pronto para receber suas instruções."
+  );
+};
+
+document.querySelectorAll(".chip[data-p]").forEach(btn => {
+  btn.onclick = () => {
+    const [rate,pitch] = btn.dataset.p.split(",");
+    $("rate").value = rate;
+    $("pitch").value = pitch;
+
+    speak("Perfil de voz ajustado.");
+  };
+});
+
+const Recognition =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+if(Recognition){
+
+  recognition = new Recognition();
+
+  recognition.lang = "pt-BR";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    document.body.dataset.s = "listening";
+    $("mic").classList.add("on");
+    $("st").textContent = "ESCUTANDO";
+    $("resp").textContent = "Estou ouvindo...";
+  };
+
+  recognition.onresult = e => {
+
+    const text =
+      e.results[0][0].transcript.trim();
+
+    $("txt").value = text;
+    $("resp").textContent = "Você: " + text;
+
+    executar(text);
+  };
+
+  recognition.onerror = e => {
+
+    $("mic").classList.remove("on");
+    document.body.dataset.s = "error";
+
+    if(e.error === "not-allowed"){
+      $("st").textContent = "MICROFONE BLOQUEADO";
+      $("resp").textContent =
+        "Permita o microfone no Safari.";
+    }else{
+      $("st").textContent = "ERRO NO MICROFONE";
+    }
+  };
+
+  recognition.onend = () => {
+    $("mic").classList.remove("on");
+
+    if(document.body.dataset.s !== "error"){
+      document.body.dataset.s = "idle";
+      $("st").textContent = "SISTEMA PRONTO";
+    }
+  };
+}
+
+$("mic").onclick = () => {
+
+  if(!recognition){
+
+    speak(
+      "Seu navegador não oferece reconhecimento de voz."
+    );
+
+    return;
+  }
+
+  try{
+    recognition.start();
+  }catch(e){
+    recognition.stop();
+
+    setTimeout(()=>{
+      try{
+        recognition.start();
+      }catch(e){}
+    },200);
+  }
+};
+
+$("stop").onclick = () => {
+
+  speechSynthesis.cancel();
+
+  if(recognition){
+    try{
+      recognition.stop();
+    }catch(e){}
+  }
+
+  document.body.dataset.s = "idle";
+  $("mic").classList.remove("on");
+  $("st").textContent = "SISTEMA PRONTO";
+};
+
+$("snd").onclick = () => {
+
+  const text = $("txt").value.trim();
+
+  if(!text) return;
+
+  executar(text);
+};
+
+$("txt").addEventListener("keydown",e=>{
+  if(e.key === "Enter"){
+    $("snd").click();
+  }
+});
+
+async function executar(text){
+
+  const q = text.toLowerCase();
+
+  if(q.includes("hora")){
+
+    const hora =
+      new Date().toLocaleTimeString("pt-BR",{
+        hour:"2-digit",
+        minute:"2-digit"
+      });
+
+    $("resp").textContent =
+      "São " + hora + ".";
+
+    speak("São " + hora + ".");
+
+    return;
+  }
+
+  if(q.includes("data") || q.includes("dia é hoje")){
+
+    const data =
+      new Date().toLocaleDateString("pt-BR",{
+        weekday:"long",
+        day:"numeric",
+        month:"long"
+      });
+
+    $("resp").textContent =
+      "Hoje é " + data + ".";
+
+    speak("Hoje é " + data + ".");
+
+    return;
+  }
+
+  if(
+    q.includes("olá") ||
+    q.includes("ola")
+  ){
+
+    const nome =
+      localStorage.getItem("jarvis_name") ||
+      "senhor";
+
+    const resposta =
+      "Olá, " + nome +
+      ". Estou à sua disposição.";
+
+    $("resp").textContent = resposta;
+
+    speak(resposta);
+
+    return;
+  }
+
+  $("resp").textContent =
+    "Comando recebido: " + text;
+
+  speak(
+    "Entendido. Recebi seu comando."
+  );
+}
+
+
+/* CÂMERA */
+
+$("bcam").onclick = async () => {
+
+  $("camov").classList.add("on");
+
+  try{
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+        video:{
+          facingMode:facing
+        },
+        audio:false
+      });
+
+    $("vid").srcObject = stream;
+
+  }catch(e){
+
+    $("chint").textContent =
+      "Não foi possível acessar a câmera. Permita o acesso no Safari.";
+
+  }
+};
+
+$("cclose").onclick = () => {
+
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+    stream = null;
+  }
+
+  $("camov").classList.remove("on");
+};
+
+$("cflip").onclick = async () => {
+
+  facing =
+    facing === "environment"
+      ? "user"
+      : "environment";
+
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+  }
+
+  try{
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+        video:{
+          facingMode:facing
+        },
+        audio:false
+      });
+
+    $("vid").srcObject = stream;
+
+  }catch(e){}
+};
+
+$("csnap").onclick = () => {
+
+  const video = $("vid");
+
+  const canvas =
+    document.createElement("canvas");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  canvas
+    .getContext("2d")
+    .drawImage(video,0,0);
+
+  $("shot").src =
+    canvas.toDataURL("image/jpeg");
+
+  $("shot").hidden = false;
+};
+
+$("file").onchange = e => {
+
+  const file = e.target.files[0];
+
+  if(!file) return;
+
+  $("shot").src =
+    URL.createObjectURL(file);
+
+  $("shot").hidden = false;
+};
+
+$("cai").onclick = () => {
+
+  speak(
+    "A análise visual ainda não está conectada à inteligência artificial."
+  );
+};
+
+
+/* CONFIGURAÇÃO INICIAL */
+
+$("name").value =
+  localStorage.getItem("jarvis_name") || "";
+
+$("key").value =
+  localStorage.getItem("jarvis_key") || "";
+
+$("rate").value = .8;
+$("pitch").value = .9;
+
+</script>
