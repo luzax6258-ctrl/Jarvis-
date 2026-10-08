@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#02070d"><title>JARVIS</title>
+<style>
+:root{--c:#4de3ff;--bg:#02070d;--line:rgba(77,227,255,.22);--mut:#7da5ad}
+body[data-s=thinking]{--c:#9b8cff}body[data-s=error]{--c:#ff6b6b}body[data-s=listening]{--c:#7dfcd6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:#e9fcff;font-family:-apple-system,"SF Pro Display",sans-serif}
+body{background:radial-gradient(circle at 50% 38%,#0a3a4a55,transparent 45%),radial-gradient(circle at 50% 110%,#06406055,transparent 40%),var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#app{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom))}
+.top{width:100%;display:flex;justify-content:space-between;align-items:center}
+.logo{letter-spacing:6px;font-size:12px;font-weight:600;color:#bceff6}
+.logo i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);margin-right:9px}
+.gear{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:#0a1c2599;font-size:18px}
+.time{margin-top:10px;font-size:44px;font-weight:200;letter-spacing:6px;text-shadow:0 0 22px var(--c)}
+.date{font-size:11px;letter-spacing:2px;color:var(--mut);text-transform:capitalize}
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
+.orb{position:relative;width:min(58vw,240px);aspect-ratio:1;flex:none}
+.orb>*{position:absolute;border-radius:50%}
+.o1{inset:0;border:1px dashed var(--line);animation:spin 50s linear infinite}
+.o2{inset:7%;background:repeating-conic-gradient(var(--c) 0 .8deg,transparent .8deg 6deg);opacity:.5;-webkit-mask:radial-gradient(circle closest-side,transparent 92%,#000 93%);mask:radial-gradient(circle closest-side,transparent 92%,#000 93%);animation:spin 70s linear infinite reverse}
+.o3{inset:14%;background:conic-gradient(transparent 0,var(--c) 35%,transparent 60%);-webkit-mask:radial-gradient(circle closest-side,transparent 94%,#000 95%);mask:radial-gradient(circle closest-side,transparent 94%,#000 95%);animation:spin 5s linear infinite}
+.o4{inset:24%;border:2px solid var(--c);box-shadow:0 0 28px var(--c),inset 0 0 28px var(--c);opacity:.7}
+.core{inset:36%;background:radial-gradient(circle,#fff 0,var(--c) 38%,transparent 70%);box-shadow:0 0 50px var(--c);animation:pulse 3s ease-in-out infinite}
+body[data-s=listening] .core,body[data-s=speaking] .core{animation-duration:.7s}
+body[data-s=thinking] .o3{animation-duration:1s}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{transform:scale(1.18);opacity:.85}}
+.wave{display:flex;gap:3px;height:30px;align-items:center;margin-top:14px}
+.wave b{width:3px;height:4px;border-radius:2px;background:var(--c);opacity:.8}
+body[data-s=listening] .wave b,body[data-s=speaking] .wave b{animation:bar .8s ease-in-out infinite}
+@keyframes bar{50%{height:28px}}
+#st{margin-top:8px;font-size:10px;letter-spacing:4px;color:var(--c)}
+#resp{margin-top:10px;width:100%;max-height:24vh;overflow-y:auto;text-align:center;font-size:16px;line-height:1.5;padding:0 6px}
+.dock{width:100%;max-width:520px;background:#06141dcc;border:1px solid var(--line);border-radius:28px;padding:10px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.row{display:flex;gap:8px;align-items:center}.row+.row{margin-top:8px}
+.dock input{flex:1;min-width:0;height:42px;border-radius:21px;border:1px solid var(--line);background:#020a0f;color:#fff;padding:0 16px;font-size:16px;outline:none}
+.ib{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:#0a1c25;font-size:19px;flex:none;display:grid;place-items:center}
+.mic{flex:1;height:54px;border-radius:27px;border:1px solid var(--c);background:linear-gradient(#17647a,#04232d);font-size:15px;letter-spacing:3px;box-shadow:inset 0 0 18px rgba(77,227,255,.2)}
+.mic.on{background:var(--c);color:#02070d;box-shadow:0 0 30px var(--c)}
+.ov{position:fixed;inset:0;z-index:20;background:#000a;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:none;align-items:flex-end;justify-content:center}
+.ov.on{display:flex}
+.sheet{width:100%;max-width:560px;max-height:92%;overflow-y:auto;background:linear-gradient(#0a1c26,#030c12);border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 6px;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+.sheet label{display:block;margin:12px 0 6px;font-size:11px;color:var(--mut)}
+.sheet input[type=text],.sheet input[type=password],.sheet select{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:#020a0f;color:#fff;padding:0 12px;font-size:16px}
+.sheet input[type=range]{width:100%}
+.chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#0a1c25;border-radius:16px;padding:8px 14px;font-size:13px}
+.save{width:100%;height:48px;margin-top:16px;border-radius:14px;border:1px solid var(--c);background:#0a3541}
+.hint{font-size:11px;line-height:1.5;color:#7699a1;margin-top:10px}
+#camov{background:#000;flex-direction:column;align-items:stretch}
+#camov video,#camov img{flex:1;min-height:0;width:100%;object-fit:cover}
+#chint{text-align:center;font-size:12px;color:var(--mut);padding:6px;background:#02070d}
+.camb{display:flex;justify-content:space-around;align-items:center;padding:8px 10px calc(16px + env(safe-area-inset-bottom));background:#02070d}
+.snap{width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:var(--c)}
+</style></head>
+<body data-s="idle"><canvas id="fx"></canvas>
+<div id="app">
+<div class="top"><div class="logo"><i></i>J.A.R.V.I.S.</div><button class="gear" id="bset">⚙️</button></div>
+<div class="time" id="time">00:00</div><div class="date" id="date"></div>
+<div class="stage">
+<div class="orb"><div class="o1"></div><div class="o2"></div><div class="o3"></div><div class="o4"></div><div class="core"></div></div>
+<div class="wave" id="wave"></div><div id="st">SISTEMA PRONTO</div>
+<div id="resp">Toque em 🎙 e fale comigo.</div>
+</div>
+<div class="dock">
+<div class="row"><input id="txt" type="text" placeholder="Digite um comando…" enterkeyhint="send" autocomplete="off"><button class="ib" id="snd">➤</button></div>
+<div class="row"><button class="ib" id="bcam">📷</button><button class="mic" id="mic">🎙 FALAR</button><button class="ib" id="stop">⏹</button></div>
+</div>
+</div>
+
+<div class="ov" id="ov"><div class="sheet">
+<h2>⚙️ Ajustes <button class="ib" id="sclose" style="width:36px;height:36px;font-size:15px">✕</button></h2>
+<label>Seu nome</label><input id="name" type="text" placeholder="Como devo chamar você?">
+<label>Chave Gemini</label><input id="key" type="password" placeholder="Cole sua chave aqui" autocomplete="off">
+<label>Voz (todas as vozes do seu iPhone)</label><select id="vsel"></select>
+<div class="chips"><button class="chip" data-p="0.8,0.9">🎩 Mordomo</button><button class="chip" data-p="1,1">🙂 Natural</button><button class="chip" data-p="0.6,0.8">🎬 Grave</button><button class="chip" data-p="1.3,1.2">⚡ Rápida</button></div>
+<label>Velocidade</label><input id="rate" type="range" min=".5" max="1.6" step=".05">
+<label>Tom (grave ↔ agudo)</label><input id="pitch" type="range" min=".4" max="1.6" step=".05">
+<label><input id="auto" type="checkbox"> Modo conversa (volta a ouvir sozinho)</label>
+<button class="chip" id="vtest" style="margin-top:8px">🔊 Testar voz</button>
+<button class="save" id="save">Salvar</button>
+<div class="hint">Mais vozes: Ajustes do iPhone › Acessibilidade › Conteúdo Falado › Vozes. Sem som? Tire o iPhone do silencioso. Se escolher voz em inglês, o JARVIS responde em inglês.</div>
+</div></div>
+
+<div class="ov" id="camov">
+<video id="vid" playsinline autoplay muted></video><img id="shot" hidden alt="">
+<div id="chint">Câmera ao vivo. 👁 faz o JARVIS descrever o que vê.</div>
+<div class="camb"><button class="ib" id="cflip">⟲</button><button class="snap" id="csnap"></button><button class="ib" id="cai">👁</button>
+<label class="ib">📱<input id="file" type="file" accept="image/*" capture="environment" hidden></label><button class="ib" id="cclose">✕</button></div>
+</div>
+
+<script src="app.js"></script></body></html>
